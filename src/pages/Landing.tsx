@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import useStore from '../store/useStore'
 import { IMAGES } from '../data/images'
 import SmartImage from '../components/SmartImage'
-import { ArrowRight, Monitor, Shield, User } from 'lucide-react'
+import { ArrowRight, Clock, Link2, MapPin, Mic, Monitor, PhoneCall, Shield, User, Users, Zap } from 'lucide-react'
 
 const roles = [
   { role: 'pilgrim', path: '/pilgrim', title: 'Pilgrim', subtitle: 'Mobile emergency reporting', Icon: User, color: 'text-orange-500' },
@@ -51,6 +51,50 @@ export default function Landing(){
               <div className="mt-6 flex items-center gap-2 text-sm font-bold text-orange-500">Enter portal <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></div>
             </button>
           ))}
+        </div>
+      </section>
+
+
+      <section className="bg-gradient-to-b from-white to-orange-50 px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-stretch">
+          <div className="rounded-[2rem] bg-gray-950 p-6 text-white shadow-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full bg-orange-500/20 px-3 py-1 text-xs font-black uppercase tracking-[0.3em] text-orange-200">
+              <PhoneCall className="h-4 w-4" /> Unique demo feature
+            </div>
+            <div className="mt-6 text-6xl font-black text-orange-400">1916</div>
+            <h3 className="mt-3 text-3xl font-black">Single call to dispatch</h3>
+            <p className="mt-4 text-sm leading-7 text-gray-300">
+              A pilgrim with any phone can dial the mela helpline, speak in Hindi, Gujarati, Marathi, Bengali, or English, and SimhasthaSetu turns the call into a mapped P1 ticket, ambulance assignment, and SMS callback in under 90 seconds.
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl bg-white/10 p-3"><Mic className="h-5 w-5 text-orange-300" /><div className="mt-2 text-xs font-bold">Voice first</div></div>
+              <div className="rounded-2xl bg-white/10 p-3"><MapPin className="h-5 w-5 text-orange-300" /><div className="mt-2 text-xs font-bold">Auto map plot</div></div>
+              <div className="rounded-2xl bg-white/10 p-3"><Clock className="h-5 w-5 text-orange-300" /><div className="mt-2 text-xs font-bold">90 sec dispatch</div></div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-3xl border border-orange-100 bg-white p-5 shadow-lg">
+              <Link2 className="h-7 w-7 text-orange-500" />
+              <h4 className="mt-4 font-black text-gray-950">Cross-agency single truth</h4>
+              <p className="mt-2 text-sm leading-6 text-gray-600">Police, medical, NDRF, fire, and mela administration see one shared incident and resource state instead of scattered radio and WhatsApp threads.</p>
+            </div>
+            <div className="rounded-3xl border border-orange-100 bg-white p-5 shadow-lg">
+              <MapPin className="h-7 w-7 text-orange-500" />
+              <h4 className="mt-4 font-black text-gray-950">Ujjain-specific intelligence</h4>
+              <p className="mt-2 text-sm leading-6 text-gray-600">Ram Ghat choke points, Mahakal corridor peaks, pre-dawn drowning risk, and noon heat-exhaustion patterns are baked into the demo logic.</p>
+            </div>
+            <div className="rounded-3xl border border-orange-100 bg-white p-5 shadow-lg">
+              <Users className="h-7 w-7 text-orange-500" />
+              <h4 className="mt-4 font-black text-gray-950">Deduplication at scale</h4>
+              <p className="mt-2 text-sm leading-6 text-gray-600">Many reports for one emergency become one actionable merged incident with a visible report-count badge.</p>
+            </div>
+            <div className="rounded-3xl border border-orange-100 bg-white p-5 shadow-lg">
+              <Zap className="h-7 w-7 text-orange-500" />
+              <h4 className="mt-4 font-black text-gray-950">Predictive, not reactive</h4>
+              <p className="mt-2 text-sm leading-6 text-gray-600">The AI insights page turns historical Simhastha 2016 patterns and live incidents into deployment recommendations before density becomes dangerous.</p>
+            </div>
+          </div>
         </div>
       </section>
 
