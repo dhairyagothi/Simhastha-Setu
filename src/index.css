@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+body {
+  @apply bg-gray-50 text-gray-700 font-sans antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.page-shell {
+  @apply min-h-screen bg-gradient-to-b from-orange-50 via-white to-gray-50;
+}
+
+.glass-panel {
+  @apply bg-white/90 backdrop-blur border border-white/70 shadow-xl;
+}
