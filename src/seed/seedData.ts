@@ -37,5 +37,6 @@ export function seedIfEmpty(){
     localStorage.setItem('alerts', JSON.stringify(alerts))
     localStorage.setItem('missing', JSON.stringify(missing))
     localStorage.setItem('seeded', SEED_VERSION)
+    localStorage.setItem('resourceRequests', JSON.stringify([]))
   }
 }

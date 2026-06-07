@@ -6,7 +6,8 @@ import Pilgrim from './pages/Pilgrim'
 import ControlRoom from './pages/ControlRoom'
 import Insights from './pages/Insights'
 import Missing from './pages/Missing'
-
+import AgencyView from './pages/Agency'
+const role = localStorage.getItem('userRole') || 'medical'
 export default function App(){
   return (
     <>
@@ -20,10 +21,12 @@ export default function App(){
           loading: { style: { background: '#1F2937', color: 'white' } }
         }}
       />
+     
       <Routes>
         <Route path='/' element={<Landing/>} />
         <Route path='/pilgrim' element={<Pilgrim/>} />
         <Route path='/control' element={<ControlRoom/>} />
+        <Route path="/agency" element={<AgencyView role={role} />} />
         <Route path='/insights' element={<Insights/>} />
         <Route path='/missing' element={<Missing/>} />
       </Routes>
