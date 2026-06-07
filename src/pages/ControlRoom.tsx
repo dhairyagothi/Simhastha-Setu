@@ -1,186 +1,113 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
-import L from 'leaflet'
+import { MapContainer, TileLayer, CircleMarker, Popup, Polyline } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import { IMAGES } from '../data/images'
-import SmartImage from '../components/SmartImage'
-import { Activity, BellRing, Flame, HeartPulse, MapPin, Radio, Users } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { AlertTriangle, Car, CheckCircle, Flame, Heart, Radio, Shield, UserX, Users } from 'lucide-react'
 
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
-})
+const agencies = { POL:'bg-blue-500', MED:'bg-green-500', FIRE:'bg-red-500', NDRF:'bg-purple-500', MELA:'bg-orange-500' }
+const iconByType:any = { Medical: Heart, Fire: Flame, Missing: UserX, 'Crowd Crush': Users, Security: Shield, Drowning: Users }
+const colorBySeverity:any = { P1: '#dc2626', P2: '#f97316', P3: '#f59e0b' }
+const unitIcon:any = { Ambulance: '🚑', Fire: '🚒', Police: Car, NDRF: Users }
+const statusClass:any = { Available:'bg-green-100 text-green-700', Dispatched:'bg-orange-100 text-orange-700', 'On Scene':'bg-red-100 text-red-700', Returning:'bg-gray-100 text-gray-600' }
 
-function fetchIncidents(){
-  return JSON.parse(localStorage.getItem('incidents')||'[]')
-}
+function read(key:string){ return JSON.parse(localStorage.getItem(key)||'[]') }
+function ujjainClock(){ return new Date().toLocaleString('en-IN', { timeZone:'Asia/Kolkata', hour:'2-digit', minute:'2-digit', hour12:false, day:'2-digit', month:'short', year:'numeric' }).replace(',', ' IST ·') }
 
 export default function ControlRoom(){
-  const [incidents, setIncidents] = useState<any[]>(fetchIncidents())
-  const [units, setUnits] = useState<any[]>(JSON.parse(localStorage.getItem('units')||'[]'))
-  const [alerts, setAlerts] = useState<any[]>(JSON.parse(localStorage.getItem('alerts')||'[]'))
+  const [incidents, setIncidents] = useState<any[]>(read('incidents'))
+  const [units, setUnits] = useState<any[]>(read('units'))
+  const [alerts, setAlerts] = useState<any[]>(read('alerts'))
+  const [from, setFrom] = useState('POL')
+  const [to, setTo] = useState('MED')
+  const [msg, setMsg] = useState('')
 
   useEffect(()=>{
-    const iv = setInterval(()=>{
-      setIncidents(fetchIncidents())
-      setUnits(JSON.parse(localStorage.getItem('units')||'[]'))
-      setAlerts(JSON.parse(localStorage.getItem('alerts')||'[]'))
-    },3000)
+    const load = () => { setIncidents(read('incidents')); setUnits(read('units')); setAlerts(read('alerts')) }
+    load()
+    const iv = setInterval(load,3000)
     return ()=>clearInterval(iv)
   },[])
 
-  const stats = useMemo(() => ([
-    { label: 'Active Incidents', value: incidents.length, icon: BellRing, accent: 'bg-red-50 text-red-600' },
-    { label: 'Units Deployed', value: units.length, icon: Users, accent: 'bg-orange-50 text-orange-600' },
-    { label: 'Alerts Sent', value: alerts.length, icon: Radio, accent: 'bg-amber-50 text-amber-600' },
-    { label: 'Critical P1', value: incidents.filter(incident => incident.severity === 'P1').length, icon: HeartPulse, accent: 'bg-rose-50 text-rose-600' },
-  ]), [alerts.length, incidents, units.length])
+  const stats = useMemo(() => [
+    { label:'Active Incidents', value:incidents.filter(i=>i.status !== 'Merged').length },
+    { label:'Units Deployed', value:units.filter(u=>u.status !== 'Available').length },
+    { label:'Alerts Sent', value:alerts.length },
+    { label:'Critical P1', value:incidents.filter(i=>i.severity === 'P1' && i.status !== 'Merged').length, critical:true }
+  ], [incidents, units, alerts])
+
+  const visibleIncidents = incidents.filter(i => i.status !== 'Merged')
+  const counts = visibleIncidents.reduce((acc:any, inc:any) => ({...acc, [inc.type]:(acc[inc.type]||0)+1}), {})
+
+  function assignUnit(incidentId:string, unitId:string){
+    if(!unitId) return
+    const nextIncidents = incidents.map(inc => inc.id === incidentId ? {...inc, status:'Assigned', assignedUnit: unitId} : inc)
+    const nextUnits = units.map(unit => unit.id === unitId ? {...unit, status:'Dispatched', location:'Ram Ghat response'} : unit)
+    setIncidents(nextIncidents); setUnits(nextUnits)
+    localStorage.setItem('incidents', JSON.stringify(nextIncidents)); localStorage.setItem('units', JSON.stringify(nextUnits))
+    toast.success(`${unitId} dispatched`)
+  }
+
+  function sendAlert(){
+    if(!msg.trim()) return toast.error('Type an alert message')
+    const alert = { id:`A-${Date.now()}`, from, to, msg, time:new Date().toISOString() }
+    const next = [alert, ...alerts]
+    setAlerts(next); localStorage.setItem('alerts', JSON.stringify(next)); setMsg('')
+    toast.success('Inter-agency alert sent')
+  }
 
   return (
-    <div className="page-shell p-4 sm:p-6 lg:p-8">
-      <header className="glass-panel mb-6 overflow-hidden rounded-[2rem]">
-        <div className="grid lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="p-6 lg:p-8">
-            <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">
-              <Activity className="h-4 w-4" /> Live operations
-            </div>
-            <h1 className="mt-4 text-4xl font-black tracking-tight text-gray-950">Control Room Dashboard</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">Unified visibility for incidents, units, and inter-agency coordination. Every report from Pilgrim view appears here within seconds.</p>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {stats.map(stat => (
-                <div key={stat.label} className="rounded-3xl bg-white p-4 shadow-sm border border-gray-100">
-                  <div className={`inline-flex rounded-2xl p-2 ${stat.accent}`}><stat.icon className="h-5 w-5" /></div>
-                  <div className="mt-4 text-3xl font-black text-gray-950">{stat.value}</div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-400">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <SmartImage
-            src={IMAGES.command}
-            alt="Operations command room"
-            fallbackTitle="Control Room"
-            fallbackSubtitle="Live operations dashboard"
-            className="h-full min-h-[260px] w-full object-cover"
-          />
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-orange-50/40 p-4 sm:p-6 lg:p-8">
+      <nav className="mb-5 flex items-center justify-between rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-sm">
+        <div className="border-l-4 border-orange-500 pl-3"><div className="text-xl font-black text-gray-950">SimhasthaSetu</div><div className="text-xs font-bold uppercase tracking-[0.3em] text-orange-500">Control Room</div></div>
+        <div className="text-xs text-gray-400">Ujjain · {ujjainClock()}</div>
+      </nav>
 
-      <div className="grid gap-6 xl:grid-cols-[0.34fr_1fr_0.32fr]">
-        <aside className="space-y-6">
-          <div className="glass-panel overflow-hidden rounded-[2rem]">
-            <div className="h-40 bg-gradient-to-br from-slate-900 via-orange-700 to-amber-500 p-5 text-white">
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-100">Alert Feed</div>
-              <div className="mt-2 max-w-xs text-lg font-bold leading-6">Structured inter-agency alerts in one place</div>
-            </div>
-            <div className="p-5">
-              <div className="flex items-center gap-2 text-sm font-bold text-gray-950"><MapPin className="h-4 w-4 text-orange-500" /> Inter-Agency Alert Feed</div>
-              <div className="mt-4 space-y-3">
-                {alerts.map((alert:any) => (
-                  <div key={alert.id} className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
-                    <div className="text-xs font-bold uppercase tracking-[0.25em] text-orange-500">{alert.from} → {alert.to}</div>
-                    <div className="mt-1 text-sm text-gray-600">{alert.msg}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="glass-panel rounded-[2rem] p-5">
-            <div className="flex items-center gap-2 text-sm font-bold text-gray-950"><Flame className="h-4 w-4 text-orange-500" /> Live status</div>
-            <div className="mt-4 grid gap-3 text-sm text-gray-600">
-              <div className="rounded-2xl bg-orange-50 p-3">P1 escalations are auto-highlighted.</div>
-              <div className="rounded-2xl bg-gray-50 p-3">Assignments update localStorage every cycle.</div>
-              <div className="rounded-2xl bg-amber-50 p-3">Reminder: keep visuals light and reserve photos for hero sections.</div>
-            </div>
-          </div>
-        </aside>
+      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {stats.map(stat => <div key={stat.label} className={`relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm ${stat.critical ? 'bg-red-50' : ''}`}>
+          {stat.critical && <div className="absolute inset-0 opacity-30" style={{backgroundImage:'radial-gradient(circle, #fca5a5 1px, transparent 1px)', backgroundSize:'20px 20px'}} />}
+          <div className="relative text-3xl font-black text-gray-950">{stat.value}</div><div className="relative mt-1 text-xs font-bold uppercase tracking-[0.25em] text-gray-400">{stat.label}</div>
+        </div>)}
+      </div>
 
+      <div className="grid gap-6 xl:grid-cols-[0.64fr_0.36fr]">
         <section className="space-y-6">
-          <div className="glass-panel overflow-hidden rounded-[2rem] p-4">
-            <div className="mb-4 flex items-center justify-between px-2 pt-1">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">Live map</div>
-                <h2 className="text-xl font-bold text-gray-950">Ram Ghat · Ujjain</h2>
-              </div>
-              <div className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">Streaming every 3s</div>
+          <div className="relative overflow-hidden rounded-[2rem] border border-gray-100 bg-white p-4 shadow-xl">
+            <div className="absolute left-8 top-8 z-[500] rounded-xl bg-white/90 p-3 text-xs shadow-sm backdrop-blur-sm">
+              <div className="mb-2 font-black text-gray-950">Incident legend</div>
+              {Object.entries(counts).map(([type,count]) => <div key={type} className="flex items-center gap-2 py-0.5"><span className="h-2 w-2 rounded-full bg-orange-500" />{type}: {count as number}</div>)}
             </div>
-            <div className="h-[540px] overflow-hidden rounded-[1.5rem] border border-gray-200">
-              <MapContainer center={[23.1828,75.7682]} zoom={15} style={{height: '100%', width: '100%'}}>
-                <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
-                {incidents.slice(0,10).map((inc:any, index:number)=> (
-                  <Marker key={inc.id} position={[23.1828 + (index * 0.001), 75.7682 + (index % 3) * 0.0012]}>
-                    <Popup>
-                      <div className="space-y-1">
-                        <div className="font-bold text-gray-950">{inc.type} · {inc.severity}</div>
-                        <div className="text-sm text-gray-500">{inc.location}</div>
-                        <div className="text-xs text-gray-500">{inc.summary}</div>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
+            <div className="h-[560px] overflow-hidden rounded-[1.5rem] border border-gray-200">
+              <MapContainer center={[23.1828,75.7682]} zoom={14} style={{height:'100%', width:'100%'}}>
+                <TileLayer attribution="&copy; CARTO" url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+                <Polyline pathOptions={{color:'#f97316', weight:4}} positions={[[23.1818,75.7672],[23.1839,75.7675],[23.1842,75.7697],[23.1822,75.7701],[23.1818,75.7672]]} />
+                <Polyline pathOptions={{color:'#f59e0b', weight:4}} positions={[[23.1802,75.7634],[23.1825,75.7638],[23.1822,75.7662],[23.1804,75.7661],[23.1802,75.7634]]} />
+                {visibleIncidents.map((inc:any)=><CircleMarker key={inc.id} center={[inc.lat || 23.1828, inc.lng || 75.7682]} radius={inc.severity === 'P1' ? 11 : 8} pathOptions={{color:colorBySeverity[inc.severity] || '#f59e0b', fillColor:colorBySeverity[inc.severity] || '#f59e0b', fillOpacity:0.85}}><Popup><div><b>{inc.type} · {inc.severity}</b><br />{inc.location}<br />{inc.summary}<br />{inc.mergedReports ? `⚠️ ${inc.mergedReports} reports merged` : ''}</div></Popup></CircleMarker>)}
               </MapContainer>
             </div>
           </div>
 
-          <div className="glass-panel rounded-[2rem] p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">Incident feed</div>
-                <h3 className="text-xl font-bold text-gray-950">Newest first</h3>
-              </div>
-              <div className="rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">{incidents.length} reports</div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-[2rem] border border-gray-100 bg-white p-5 shadow-xl">
+              <div className="mb-4 flex items-center gap-2 font-black text-gray-950"><Radio className="h-4 w-4 text-orange-500" /> Inter-Agency Alert Feed</div>
+              <div className="grid grid-cols-2 gap-2"><select value={from} onChange={e=>setFrom(e.target.value)} className="rounded-xl border border-gray-200 p-2 text-sm">{Object.keys(agencies).map(a=><option key={a}>{a}</option>)}</select><select value={to} onChange={e=>setTo(e.target.value)} className="rounded-xl border border-gray-200 p-2 text-sm">{Object.keys(agencies).map(a=><option key={a}>{a}</option>)}</select></div>
+              <textarea value={msg} onChange={e=>setMsg(e.target.value)} className="mt-3 h-20 w-full rounded-xl border border-gray-200 p-3 text-sm" placeholder="Compose alert..." />
+              <button onClick={sendAlert} className="mt-3 w-full rounded-xl bg-orange-500 py-3 text-sm font-bold text-white">Send Alert</button>
+              <div className="mt-4 space-y-3">{alerts.map((alert:any)=><div key={alert.id} className="flex gap-3 rounded-2xl bg-gray-50 p-3 text-sm"><div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${(agencies as any)[alert.from] || 'bg-gray-500'}`}>{alert.from}</div><div><div className="text-xs font-bold text-orange-600">{alert.from} → {alert.to} · {new Date(alert.time).toLocaleTimeString()}</div><div className="text-gray-600">{alert.msg}</div></div></div>)}</div>
             </div>
-            <div className="grid gap-3">
-              {incidents.map((inc:any) => (
-                <div key={inc.id} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-sm font-bold text-gray-950">{inc.type}</div>
-                      <div className="mt-1 text-xs text-gray-500">{inc.location}</div>
-                    </div>
-                    <div className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.25em] ${inc.severity === 'P1' ? 'bg-red-50 text-red-700' : inc.severity === 'P2' ? 'bg-orange-50 text-orange-700' : 'bg-amber-50 text-amber-700'}`}>
-                      {inc.severity}
-                    </div>
-                  </div>
-                  <div className="mt-3 text-sm text-gray-600">{inc.summary}</div>
-                  <div className="mt-3 flex items-center justify-between text-xs text-gray-400">
-                    <span>{new Date(inc.time).toLocaleTimeString()}</span>
-                    <span className="rounded-full bg-gray-100 px-2 py-1 font-semibold text-gray-600">{inc.status}</span>
-                  </div>
-                </div>
-              ))}
+
+            <div className="rounded-[2rem] border border-gray-100 bg-white p-5 shadow-xl">
+              <div className="mb-4 font-black text-gray-950">Resource Tracker</div>
+              <div className="overflow-hidden rounded-xl border border-gray-100"><table className="w-full text-left text-sm"><tbody>{units.map((unit:any)=>{ const UnitIcon = unitIcon[unit.type]; return <tr key={unit.id} className="border-b border-gray-100 last:border-0"><td className="p-3 font-semibold text-gray-900">{typeof UnitIcon === 'string' ? UnitIcon : <UnitIcon className="inline h-4 w-4" />} {unit.name}</td><td className="p-3"><span className={`rounded-full px-2 py-1 text-xs font-bold ${statusClass[unit.status] || statusClass.Available}`}>{unit.status}</span></td></tr>})}</tbody></table></div>
+              <div className="mt-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-5 text-center text-sm font-bold text-gray-400">CCTV Feed — Integration Ready</div>
             </div>
           </div>
         </section>
 
-        <aside className="space-y-6">
-          <div className="glass-panel rounded-[2rem] p-5">
-            <div className="rounded-3xl bg-gradient-to-br from-orange-500 to-amber-400 p-5 text-white shadow-lg">
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-50">Resource tracker</div>
-              <div className="mt-2 text-lg font-bold">Live units and availability</div>
-            </div>
-            <div className="p-0 pt-5">
-              <div className="text-sm font-bold text-gray-950">Resource Tracker</div>
-              <div className="mt-3 space-y-3 text-sm text-gray-600">
-                {units.map((unit:any) => (
-                  <div key={unit.id} className="rounded-2xl bg-white p-3 shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-gray-900">{unit.name}</span>
-                      <span className="rounded-full bg-green-50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-green-700">{unit.status}</span>
-                    </div>
-                    <div className="mt-1 text-xs text-gray-500">{unit.type} · {unit.location}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="glass-panel rounded-[2rem] p-5">
-            <div className="text-sm font-bold text-gray-950">Daily posture</div>
-            <div className="mt-3 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-400 p-4 text-white shadow-lg">
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-50">AI summary</div>
-              <div className="mt-2 text-sm leading-6 text-white/95">Traffic near Ram Ghat remains the highest risk. Pre-stage ambulances on the south corridor and keep fire support near the northern lane.</div>
-            </div>
+        <aside className="overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-xl">
+          <div className="flex items-center justify-between rounded-t-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-3 font-bold text-white">Live Incidents <span className="h-2 w-2 animate-pulse rounded-full bg-white" /></div>
+          <div className="max-h-[840px] space-y-3 overflow-auto p-4">
+            {!visibleIncidents.length && <div className="py-12 text-center text-gray-400"><CheckCircle size={48} className="mx-auto text-green-400" />All clear · No active incidents</div>}
+            {visibleIncidents.map((inc:any)=>{ const Icon = iconByType[inc.type] || AlertTriangle; return <div key={inc.id} className="flex gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm"><div className="w-1 rounded bg-orange-500" style={{backgroundColor: colorBySeverity[inc.severity]}} /><div className="flex-1"><div className="flex items-start justify-between gap-3"><div className="flex items-center gap-2 font-bold text-gray-950"><Icon size={16} className="text-orange-500" />{inc.type}</div><span className="rounded-full bg-red-50 px-2 py-1 text-[10px] font-black text-red-700">{inc.severity}</span></div><div className="mt-1 text-xs text-gray-500">{inc.location}</div><p className="mt-2 text-sm text-gray-600">{inc.summary}</p>{inc.mergedReports && <div className="mt-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">⚠️ {inc.mergedReports} reports merged</div>}<div className="mt-3 flex items-center justify-between gap-2"><span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600">{inc.status}</span><select onChange={e=>assignUnit(inc.id, e.target.value)} value="" className="rounded-xl border border-gray-200 bg-white px-2 py-1 text-xs"><option value="">Assign Unit</option>{units.filter(u=>u.status === 'Available').map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></div></div></div>})}
           </div>
         </aside>
       </div>
