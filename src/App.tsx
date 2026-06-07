@@ -14,8 +14,10 @@ export default function App(){
         position="top-right"
         toastOptions={{
           style: { background: '#F97316', color: '#fff', borderRadius: '14px' },
-          success: { style: { background: '#16A34A', color: '#fff' } },
-          error: { style: { background: '#DC2626', color: '#fff' } }
+          success: { style: { background: '#F97316', color: 'white' } },
+          error: { style: { background: '#DC2626', color: 'white' } },
+          blank: { style: { background: '#1F2937', color: 'white' } },
+          loading: { style: { background: '#1F2937', color: 'white' } }
         }}
       />
       <Routes>

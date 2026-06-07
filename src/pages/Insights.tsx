@@ -1,110 +1,64 @@
-import React from 'react'
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, Legend } from 'recharts'
+import React, { useMemo, useState } from 'react'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine } from 'recharts'
+import { generateDeploymentPlan } from '../utils/claude'
 import { IMAGES } from '../data/images'
-import SmartImage from '../components/SmartImage'
-import { Sparkles, TrendingUp } from 'lucide-react'
+import { AlertCircle, AlertTriangle, Sparkles, TrendingUp } from 'lucide-react'
 
-const mock = [
-  {time: '6am', ram: 20, mahakal: 15, triveni: 10},
-  {time: '8am', ram: 60, mahakal: 50, triveni: 30},
-  {time: '10am', ram: 90, mahakal: 70, triveni: 50},
-  {time: '12pm', ram: 40, mahakal: 30, triveni: 25},
-  {time: '2pm', ram: 30, mahakal: 25, triveni: 20}
+const forecast = [
+  {time:'6am', hour:6, ram:38, mahakal:22, triveni:46},
+  {time:'7am', hour:7, ram:64, mahakal:36, triveni:72},
+  {time:'8am', hour:8, ram:92, mahakal:50, triveni:58},
+  {time:'9am', hour:9, ram:84, mahakal:66, triveni:44},
+  {time:'10am', hour:10, ram:70, mahakal:88, triveni:36},
+  {time:'11am', hour:11, ram:55, mahakal:82, triveni:30},
+  {time:'12pm', hour:12, ram:40, mahakal:56, triveni:25}
 ]
 
-export default function Insights(){
-  return (
-    <div className="page-shell p-4 sm:p-6 lg:p-8">
-      <div className="glass-panel overflow-hidden rounded-[2rem]">
-        <div className="grid lg:grid-cols-[0.85fr_1.15fr]">
-          <div className="p-6 lg:p-8">
-            <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">
-              <Sparkles className="h-4 w-4" /> AI Insights
-            </div>
-            <h1 className="mt-4 text-4xl font-black tracking-tight text-gray-950">Situational intelligence for Shahi Snan planning</h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-gray-600">Clean charts, a strong visual hierarchy, and the most important AI moments surfaced without clutter.</p>
-            <div className="mt-6 rounded-[1.5rem] overflow-hidden border border-gray-100 shadow-sm">
-              <SmartImage
-                src={IMAGES.crowd}
-                alt="Crowd scale"
-                fallbackTitle="Crowd scale"
-                fallbackSubtitle="75M+ pilgrims · Simhastha 2016"
-                className="h-64 w-full object-cover"
-              />
-            </div>
-          </div>
-          <div className="flex h-full min-h-[280px] w-full items-end bg-gradient-to-br from-orange-500 via-amber-400 to-orange-100 p-6 text-white">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-50">Reminder</div>
-              <div className="mt-2 max-w-sm text-2xl font-bold leading-8">Keep the insights page focused on trend visibility, not extra imagery.</div>
-            </div>
-          </div>
-        </div>
-      </div>
+function Thinking(){ return <div className="flex items-center justify-center gap-2 py-4 text-sm text-orange-500"><span className="h-2 w-2 animate-bounce rounded-full bg-orange-400" /><span className="h-2 w-2 animate-bounce rounded-full bg-orange-400 [animation-delay:150ms]" /><span className="h-2 w-2 animate-bounce rounded-full bg-orange-400 [animation-delay:300ms]" />SimhasthaSetu AI is analyzing...</div> }
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <section className="glass-panel rounded-[2rem] p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">Crowd surge prediction</div>
-              <h2 className="text-xl font-bold text-gray-950">Ram Ghat, Mahakal, Triveni</h2>
-            </div>
-            <div className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">85% threshold</div>
-          </div>
-          <div className="mt-5 h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={mock}>
-                <defs>
-                  <linearGradient id="colorRam" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#F97316" stopOpacity={0.85}/>
-                    <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorMahakal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.7}/>
-                    <stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="time" tick={{ fill: '#6B7280', fontSize: 12 }} />
-                <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
-                <Tooltip />
-                <Legend />
-                <Area type="monotone" dataKey="ram" stroke="#F97316" fillOpacity={1} fill="url(#colorRam)" name="Ram Ghat" />
-                <Area type="monotone" dataKey="mahakal" stroke="#F59E0B" fillOpacity={1} fill="url(#colorMahakal)" name="Mahakal Mandir" />
-                <Area type="monotone" dataKey="triveni" stroke="#6B7280" fillOpacity={0.1} fill="#CBD5E1" name="Triveni Ghat" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-5 rounded-2xl bg-orange-50 p-4 text-sm leading-6 text-orange-800 shadow-sm">
-            Ram Ghat expected to exceed safe capacity at 8:00 AM. Recommend crowd diversion via Route 7-B.
-          </div>
+export default function Insights(){
+  const [plan, setPlan] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [timestamp, setTimestamp] = useState('')
+  const currentHour = useMemo(() => Math.min(12, Math.max(6, new Date().getHours())), [])
+
+  async function generate(){
+    setLoading(true)
+    const incidents = JSON.parse(localStorage.getItem('incidents') || '[]')
+    const response = await generateDeploymentPlan(incidents)
+    setPlan(response)
+    setTimestamp(new Date().toLocaleTimeString())
+    setLoading(false)
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-gray-50 p-4 sm:p-6 lg:p-8">
+      <header className="relative h-32 overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 p-6 text-white shadow-xl">
+        <div className="relative z-10"><h1 className="text-3xl font-black">AI Situational Intelligence</h1><p className="mt-2 text-sm text-white/70">Powered by SimhasthaSetu AI · Live Analysis</p></div>
+        <img src={IMAGES.insights} alt="Data visualization" className="absolute right-0 top-0 h-full w-1/2 object-cover opacity-30" />
+      </header>
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-xl">
+          <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2 text-xl font-black text-gray-950"><TrendingUp className="text-orange-500" /> Crowd Density Forecast</div><div className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-600">Shahi Snan Tomorrow · High Risk</div></div>
+          <div className="mt-5 h-[330px]"><ResponsiveContainer width="100%" height="100%"><AreaChart data={forecast}><defs><linearGradient id="ram" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#F97316" stopOpacity={0.85}/><stop offset="95%" stopColor="#F97316" stopOpacity={0}/></linearGradient><linearGradient id="mahakal" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#F59E0B" stopOpacity={0.7}/><stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" /><XAxis dataKey="time" tick={{ fill:'#6B7280', fontSize:12 }} /><YAxis tick={{ fill:'#6B7280', fontSize:12 }} /><Tooltip /><Legend /><ReferenceLine x={`${currentHour}am`} stroke="#111827" strokeDasharray="4 4" label="Now" /><Area type="monotone" dataKey="ram" stroke="#F97316" fill="url(#ram)" name="Ram Ghat" /><Area type="monotone" dataKey="mahakal" stroke="#F59E0B" fill="url(#mahakal)" name="Mahakal Mandir" /><Area type="monotone" dataKey="triveni" stroke="#6B7280" fill="#CBD5E1" fillOpacity={0.25} name="Triveni Ghat" /></AreaChart></ResponsiveContainer></div>
+          <div className="mt-5 flex flex-wrap gap-3 text-sm font-bold"><span className="rounded-full bg-orange-100 px-4 py-2 text-orange-700">Ram Ghat: Peak: 8:00 AM ⚠️</span><span className="rounded-full bg-amber-100 px-4 py-2 text-amber-700">Mahakal Mandir: Peak: 10:30 AM</span><span className="rounded-full bg-gray-100 px-4 py-2 text-gray-600">Triveni Ghat: Peak: 7:00 AM</span></div>
         </section>
 
         <aside className="space-y-6">
-          <div className="glass-panel rounded-[2rem] p-6">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-orange-500"><TrendingUp className="h-4 w-4" /> Incident pattern recognition</div>
-            <div className="mt-4 h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={[
-                  { type: 'Medical', count: 6 },
-                  { type: 'Missing', count: 2 },
-                  { type: 'Fire', count: 1 },
-                  { type: 'Crowd', count: 4 }
-                ]}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="type" tick={{ fill: '#6B7280', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#F97316" radius={[10,10,0,0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          <div className={`overflow-hidden rounded-[2rem] shadow-xl ${plan ? 'border border-orange-200 bg-white' : 'border-2 border-dashed border-orange-300 bg-orange-50'}`}>
+            {plan ? <div className="bg-orange-500 px-4 py-2 text-xs text-white">✦ Generated by SimhasthaSetu AI · {timestamp}</div> : null}
+            <div className="p-6">
+              {!plan && !loading && <div className="text-center"><Sparkles size={40} className="mx-auto mb-3 text-orange-300" /><div className="text-xl font-black text-gray-950">Generate AI Deployment Plan</div><div className="mt-1 text-sm text-gray-500">Based on Simhastha 2016 data + live incidents</div><button onClick={generate} className="mt-5 rounded-xl bg-orange-500 px-6 py-3 font-bold text-white shadow-lg shadow-orange-200">Generate Plan</button></div>}
+              {loading && <Thinking />}
+              {plan && <div className="space-y-3 text-sm leading-6 text-gray-700">{plan.split('\n').filter(Boolean).map((line, index)=><div key={index} className="flex gap-2"><span className="mt-2 h-2 w-2 rounded-full bg-orange-500" /><span>{line.replace(/^[-•]\s*/, '')}</span></div>)}</div>}
             </div>
-            <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-700">3 Medical incidents in Sector 4 in 15 min — escalation risk.</div>
           </div>
 
-          <div className="glass-panel rounded-[2rem] p-6">
-            <div className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500">Deployment recommendation</div>
-            <div className="mt-3 rounded-2xl bg-gray-50 p-4 text-sm text-gray-600">Deploy 4 extra ambulances near Triveni Ghat between 6–10 AM. Keep NDRF standby near Ram Ghat and reduce Freeganj coverage after 11 AM.</div>
+          <div className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-xl">
+            <div className="flex items-center gap-2 text-lg font-black text-gray-950"><AlertTriangle className="text-amber-500" /> Pattern Analysis</div>
+            <div className="mt-4 rounded-r-xl border-l-4 border-red-500 bg-red-50 p-3"><div className="flex items-center gap-2 font-bold text-red-700"><AlertCircle className="text-red-500" size={16} /> 3 Medical incidents · Sector 4 · Last 15 min</div><div className="mt-1 text-xs text-red-600">Possible crowd crush precursor — escalate to NDRF</div></div>
+            <div className="mt-4 grid grid-cols-3 gap-3 text-center text-xs font-bold text-gray-600"><div className="rounded-2xl bg-orange-50 p-3"><div className="text-2xl text-orange-600">18%</div>Density rise</div><div className="rounded-2xl bg-amber-50 p-3"><div className="text-2xl text-amber-600">8 min</div>ETA avg</div><div className="rounded-2xl bg-gray-50 p-3"><div className="text-2xl text-gray-700">4</div>Hotspots</div></div>
           </div>
         </aside>
       </div>
